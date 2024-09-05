@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless CRUD Application
+
+Resources:
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ItemsTable
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  # Define the Lambda function
+  CRUDLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambdaHandler  # Your handler file and function name
+      Runtime: nodejs18.x    # Runtime environment
+      CodeUri: src/         # Directory containing your Lambda function code
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref DynamoDBTable
+      Timeout: 30
+      Policies:
+      - AWSLambdaBasicExecutionRole
+      - DynamoDBCrudPolicy:
+          TableName: !Ref DynamoDBTable
+      Events:
+        CreateItem:
+          Type: Api
+          Properties:
+            Path: /item
+            Method: post 
+        GetItem:
+          Type: Api
+          Properties:
+            Path: /item/{id}
+            Method: get
+        UpdateItem:
+          Type: Api
+          Properties:
+            Path: /item/{id}
+            Method: put
+        DeleteItem:
+          Type: Api
+          Properties:
+            Path: /item/{id}
+            Method: delete
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
